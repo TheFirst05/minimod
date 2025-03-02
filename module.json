@@ -1,7 +1,7 @@
 {
   "id": "first-minimod",
   "title": "First mininmod",
-  "version": "1.3",
+  "version": "1.4",
   "compatibility": {
     "minimum": "11",
     "verified": "12"
@@ -28,5 +28,5 @@
   ],
   "url": "https://github.com/TheFirst05/minimod",
   "manifest": "https://github.com/TheFirst05/minimod/releases/latest/download/module.json",
-  "download": "https://github.com/TheFirst05/minimod/releases/download/1.3/module.zip"
+  "download": "https://github.com/TheFirst05/minimod/releases/download/1.4/module.zip"
 }
