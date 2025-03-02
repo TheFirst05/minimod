@@ -1,5 +1,35 @@
 console.log("minimod online");
 
+Hooks.on("init", () => {
+	game.settings.register("first-minimod", "Temperature", {
+		name: "Current Temperature",
+		hint: "Decide what temperature it is today. The bigger the number, the worse it gets (colder)",
+		scope: "world",
+		config: true,
+		type: Number,
+		default: 5,
+		range: {
+			min: 1,
+			step: 1,
+			max: 16
+		},
+	});
+	game.settings.register("first-minimod", "Precipitation", {
+		name: "Current Precipitation",
+		hint: "Decide if it's raining today. The bigger the number, the worse it gets (more rain)",
+		scope: "world",
+		config: true,
+		type: Number,
+		default: 5,
+		range: {
+			min: 1,
+			step: 1,
+			max: 16
+		},
+	});
+
+});
+
 Hooks.on("setup", () => {
 	const WFRP4E = game.wfrp4e.config
 
@@ -28,38 +58,75 @@ Hooks.once("ready", (app, html, data) => { //ensures this runs last after Simple
 			if (game.user.isGM) { //otherwise it runs the script for each user logged in
 				console.log("weather table triggered");
 
-				//game.tables.getName("Weather Table").draw();
+				let oldTemp = game.settings.get("first-minimod", "Temperature");
+				let oldWeather = game.settings.get("first-minimod", "Precipitation");
+				let newTemp, changeTemp, newWeather, changeWeather;
+
+
 
 				async function callback() {
-					let weatherTablesNames = ["Temperature","Precipitation","Visibility","Wind"];
-					const weatherTables = weatherTablesNames.map(i => game.tables.getName(i));
-					let weatherRolls = weatherTables.map(t => { return t.roll() });
-					weatherRolls = await Promise.all(weatherRolls);
-					const texts = weatherRolls.map(i => i.results[0].getChatText());
-					console.log(weatherRolls);
-					console.log("texts:", texts);
+					//temperature
+					let roll1 = await new Roll("1d8").evaluate();
+					let roll2 = await new Roll("1d8").evaluate();
 
+					let upTemp = roll1._total;
+					let downTemp = roll2._total;
+
+					if (upTemp > downTemp) {
+						changeTemp = downTemp;
+					} else {
+						changeTemp = -upTemp;
+					}
+
+					newTemp = oldTemp + changeTemp;
+					if (newTemp < 1) { newTemp = 3 };
+					if (newTemp > 16) { newTemp = 13 };
+
+
+					//weather
+					let roll3 = await new Roll("1d8").evaluate();
+					let roll4 = await new Roll("1d8").evaluate();
+
+					let upWeather = roll3._total;
+					let downWeather = roll4._total;
+
+					if (upWeather > downWeather) {
+						changeWeather = downWeather;
+					} else {
+						changeWeather = -upWeather;
+					}
+
+					newWeather = oldWeather + changeWeather;
+					if (newWeather < 1) { newWeather = 3 };
+					if (newWeather > 16) { newWeather = 13 };
+
+					//get results
+					const tempTemperature = game.tables.getName("Temperature").getResultsForRoll(newTemp);
+					let text1 = tempTemperature[0].text;
+					const tempWeather = game.tables.getName("Precipitation").getResultsForRoll(newWeather);
+					let text2 = tempWeather[0].text;
+
+
+					//chat card
 					let content = '';
 					content += `<table style="font-size: var(--font-size-14)">`;
-					content += `<tr></td><b>Weather table</b>: visibility and wind conditions can be ignored unless relevant.</td></tr>`;
-					content += `<tr><td>${texts[0]}</td></tr>`;
-					content += `<tr><td>${texts[1]}</td></tr>`;
-					content += `<tr><td>${texts[2]}</td></tr>`;
-					content += `<tr><td>${texts[3]}</td></tr>`;
+					content += `<tr></td><b>Weather table</b></td></tr>`;
+					content += `<tr><td>${text1}</td></tr>`;
+					content += `<tr><td>${text2}</td></tr>`;
+					//content += `<tr><td>${texts[3]}</td></tr>`;
+					//content += `<tr><td>${texts[4]}</td></tr>`;
 					content += `</table>`;
-
-
 
 					await ChatMessage.create({
 						speaker: {},
-						whisper: game.users.filter(u => u.isGM),
 						content
 					})
 
-				};
+					//set new weather of the day
+					game.settings.set("first-minimod", "Temperature", newTemp);
+					game.settings.set("first-minimod", "Precipitation", newWeather);
+				}
 				callback();
-
-
 			}
 		}
 	});
